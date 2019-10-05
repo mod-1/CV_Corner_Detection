@@ -37,9 +37,17 @@ def smooth1D(img, sigma):
     #    img_smoothed - a h x w numpy ndarry holding the 1D smoothing result
 
     # TODO: form a 1D horizontal Guassian filter of an appropriate size
+    kernel_size = np.int(np.sqrt(np.log(1000) * 2 * sigma))
+    kernel_range = np.arange(-1 * kernel_size, kernel_size+1)
+    gaussian_kernel = np.exp((kernel_range**2)/-2/(sigma**2))
+    print(gaussian_kernel)
 
     # TODO: convolve the 1D filter with the image;
     #       apply partial filter for the image border
+    filtered_image = convolve1d(img, gaussian_kernel, 1, np.float64, 'constant', 0, 0)
+    partial_weights_kernel = np.ones(np.shape(img))
+    img_weights = convolve1d(partial_weights_kernel, gaussian_kernel, 1, np.float64, 'constant', 0, 0)
+    img_smoothed = np.divide(filtered_image, img_weights)
 
     return img_smoothed
 
@@ -55,8 +63,9 @@ def smooth2D(img, sigma):
     #    img_smoothed - a h x w numpy array holding the 2D smoothing result
 
     # TODO: smooth the image along the vertical direction
-
+    smoothed_y = smooth1D(img, sigma)
     # TODO: smooth the image along the horizontal direction
+    img_smoothed = (smooth1D(smoothed_y.T, sigma)).T
 
     return img_smoothed
 
@@ -153,14 +162,17 @@ def main():
         print('Cannot open \'%s\'.' % args.inputfile)
         sys.exit(1)
     # uncomment the following 2 lines to show the color image
-    # plt.imshow(np.uint8(img_color))
-    # plt.show()
+    plt.imshow(np.uint8(img_color))
+    plt.show()
 
     # perform RGB to gray conversion
     print('perform RGB to grayscale conversion...')
     img_gray = rgb2gray(img_color)
     # uncomment the following 2 lines to show the grayscale image
-    plt.imshow(np.float32(img_gray), cmap = 'gray')
+    plt.imshow(np.float32(img_gray), cmap='gray')
+    plt.show()
+
+    plt.imshow(np.float64(smooth2D(img_gray, 1)), cmap='gray')
     plt.show()
 
     # perform corner detection
