@@ -21,7 +21,8 @@ def rgb2gray(img_color):
     #               the grayscale image
 
     # TODO: using the Y channel of the YIQ model to perform the conversion
-
+    trans_coeff = np.array([0.299, 0.587, 0.114])
+    img_gray = img_color @ trans_coeff
     return img_gray
 
 
@@ -159,8 +160,8 @@ def main():
     print('perform RGB to grayscale conversion...')
     img_gray = rgb2gray(img_color)
     # uncomment the following 2 lines to show the grayscale image
-    # plt.imshow(np.float32(img_gray), cmap = 'gray')
-    # plt.show()
+    plt.imshow(np.float32(img_gray), cmap = 'gray')
+    plt.show()
 
     # perform corner detection
     print('perform Harris corner detection...')
