@@ -20,7 +20,7 @@ def rgb2gray(img_color):
     #    img_gray - a h x w numpy ndarray (dtype = np.float64) holding
     #               the grayscale image
 
-    # TODO: using the Y channel of the YIQ model to perform the conversion
+    # using the Y channel of the YIQ model to perform the conversion
     trans_coeff = np.array([0.299, 0.587, 0.114])
     img_gray = img_color @ trans_coeff
     return img_gray
@@ -36,13 +36,12 @@ def smooth1D(img, sigma):
     # return:
     #    img_smoothed - a h x w numpy ndarry holding the 1D smoothing result
 
-    # TODO: form a 1D horizontal Guassian filter of an appropriate size
+    # form a 1D horizontal Guassian filter of an appropriate size
     kernel_size = np.int(np.sqrt(np.log(1000) * 2 * sigma))
-    kernel_range = np.arange(-1 * kernel_size, kernel_size+1)
-    gaussian_kernel = np.exp((kernel_range**2)/-2/(sigma**2))
-    print(gaussian_kernel)
+    kernel_range = np.arange(-1 * kernel_size, kernel_size + 1)
+    gaussian_kernel = np.exp((kernel_range ** 2) / -2 / (sigma ** 2))
 
-    # TODO: convolve the 1D filter with the image;
+    # convolve the 1D filter with the image;
     #       apply partial filter for the image border
     filtered_image = convolve1d(img, gaussian_kernel, 1, np.float64, 'constant', 0, 0)
     partial_weights_kernel = np.ones(np.shape(img))
@@ -62,10 +61,10 @@ def smooth2D(img, sigma):
     # return:
     #    img_smoothed - a h x w numpy array holding the 2D smoothing result
 
-    # TODO: smooth the image along the vertical direction
-    smoothed_y = smooth1D(img, sigma)
-    # TODO: smooth the image along the horizontal direction
-    img_smoothed = (smooth1D(smoothed_y.T, sigma)).T
+    # smooth the image along the vertical direction
+    smoothed_y = smooth1D(img.T, sigma).T
+    # smooth the image along the horizontal direction
+    img_smoothed = smooth1D(smoothed_y, sigma)
 
     return img_smoothed
 
@@ -82,18 +81,40 @@ def harris(img, sigma, threshold):
     #    corners - a list of tuples (x, y, r) specifying the coordinates
     #              (up to sub-pixel accuracy) and cornerness value of each corner
 
-    # TODO: compute Ix & Iy
-
-    # TODO: compute Ix2, Iy2 and IxIy
-
-    # TODO: smooth the squared derivatives
-
-    # TODO: compute cornesness functoin R
-
-    # TODO: mark local maxima as corner candidates;
-    #       perform quadratic approximation to local corners upto sub-pixel accuracy
-
-    # TODO: perform thresholding and discard weak corners
+    # compute Ix & Iy
+    finite_diff_kernel = np.array([0.5, 0, -0.5])
+    Ix = convolve1d(img, finite_diff_kernel, 1, np.float64, 'reflect', cval=0)
+    Iy = convolve1d(img, finite_diff_kernel, 0, np.float64, 'reflect', cval=0)
+    # compute Ix2, Iy2 and IxIy
+    Ix2 = np.multiply(Ix, Ix)
+    Iy2 = np.multiply(Iy, Iy)
+    IxIy = np.multiply(Ix, Iy)
+    # smooth the squared derivatives
+    Ix_smooth = smooth2D(Ix2, sigma)
+    Iy_smooth = smooth2D(Iy2, sigma)
+    IxIy_smooth = smooth2D(IxIy, sigma)
+    # compute cornesness function R
+    R = ((Ix_smooth * Iy_smooth) - (IxIy_smooth * IxIy_smooth)) - (0.04 * ((Ix_smooth + Iy_smooth) * (Ix_smooth + Iy_smooth)))
+    # mark local maxima as corner candidates;
+    # perform quadratic approximation to local corners upto sub-pixel accuracy
+    # perform thresholding and discard weak corners
+    corners = []
+    for row in range(1, len(R) - 1):
+        for col in range(1, len(R[0]) - 1):
+            if R[row][col] > R[row - 1][col - 1] and R[row][col] > R[row - 1][col] and R[row][col] > R[row - 1][
+                col + 1] and R[row][col] > R[row][
+                col - 1] and R[row][col] > R[row][col + 1] and R[row][col] > R[row + 1][col - 1] and R[row][col] > \
+                    R[row + 1][col] and R[row][col] > \
+                    R[row + 1][col + 1]:
+                e = R[row][col]
+                if e > threshold:
+                    a = (R[row - 1][col] + R[row + 1][col] - (2 * e))/2
+                    b = (R[row][col - 1] + R[row][col + 1] - (2 * e))/2
+                    c = (R[row + 1][col] - R[row - 1][col]) / 2
+                    d = (R[row][col + 1] - R[row][col - 1]) / 2
+                    x = -c / (2 * a)
+                    y = -d / (2 * b)
+                    corners.append((col+x, row+y, e))
 
     return sorted(corners, key=lambda corner: corner[2], reverse=True)
 
@@ -162,23 +183,19 @@ def main():
         print('Cannot open \'%s\'.' % args.inputfile)
         sys.exit(1)
     # uncomment the following 2 lines to show the color image
-    plt.imshow(np.uint8(img_color))
-    plt.show()
+    # plt.imshow(np.uint8(img_color))
+    # plt.show()
 
     # perform RGB to gray conversion
     print('perform RGB to grayscale conversion...')
     img_gray = rgb2gray(img_color)
     # uncomment the following 2 lines to show the grayscale image
-    plt.imshow(np.float32(img_gray), cmap='gray')
-    plt.show()
-
-    plt.imshow(np.float64(smooth2D(img_gray, 1)), cmap='gray')
-    plt.show()
+    # plt.imshow(np.float32(img_gray), cmap='gray')
+    # plt.show()
 
     # perform corner detection
     print('perform Harris corner detection...')
     corners = harris(img_gray, args.sigma, args.threshold)
-
     # plot the corners
     print('%d corners detected...' % len(corners))
     x = [corner[0] for corner in corners]
