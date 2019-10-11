@@ -36,7 +36,7 @@ def smooth1D(img, sigma):
     # return:
     #    img_smoothed - a h x w numpy ndarry holding the 1D smoothing result
 
-    # form a 1D horizontal Guassian filter of an appropriate size
+    # form a 1D horizontal Gaussian filter of an appropriate size
     kernel_size = np.int(np.sqrt(np.log(1000) * 2 * sigma))
     kernel_range = np.arange(-1 * kernel_size, kernel_size + 1)
     gaussian_kernel = np.exp((kernel_range ** 2) / -2 / (sigma ** 2))
@@ -130,7 +130,7 @@ def save(outputfile, corners):
             file.write('%.4f %.4f %.4f\n' % corner)
         file.close()
     except:
-        print('Error occurs in writting output to \'%s\'' % outputfile)
+        print('Error occurs in writing output to \'%s\'' % outputfile)
         sys.exit(1)
 
 
@@ -151,7 +151,7 @@ def load(inputfile):
         file.close()
         return corners
     except:
-        print('Error occurs in writting output to \'%s\'' % outputfile)
+        print('Error occurs in writing output to \'%s\'' % outputfile)
         sys.exit(1)
 
 
@@ -161,7 +161,7 @@ def load(inputfile):
 def main():
     parser = argparse.ArgumentParser(description='COMP3317 Assignment 2')
     parser.add_argument('-i', '--inputfile', type=str, default='grid1.jpg', help='filename of input image')
-    parser.add_argument('-s', '--sigma', type=float, default=1.0, help='sigma value for Gaussain filter')
+    parser.add_argument('-s', '--sigma', type=float, default=1.0, help='sigma value for Gaussian filter')
     parser.add_argument('-t', '--threshold', type=float, default=1e6, help='threshold value for corner detection')
     parser.add_argument('-o', '--outputfile', type=str, help='filename for outputting corner detection result')
     args = parser.parse_args()
