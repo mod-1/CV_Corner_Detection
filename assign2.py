@@ -84,7 +84,11 @@ def harris(img, sigma, threshold):
     # compute Ix & Iy
     finite_diff_kernel = np.array([0.5, 0, -0.5])
     Ix = convolve1d(img, finite_diff_kernel, 1, np.float64, 'reflect', cval=0)
+    Ix[:, 0] = img[:, 1] - img[:, 0]
+    Ix[:, (Ix.shape[1] - 1)] = img[:, img.shape[1] - 1] - img[:, img.shape[1] - 2]
     Iy = convolve1d(img, finite_diff_kernel, 0, np.float64, 'reflect', cval=0)
+    Iy[0] = img[1] - img[0]
+    Iy[Iy.shape[0] - 1] = img[img.shape[0] - 1] - img[img.shape[0] - 2]
     # compute Ix2, Iy2 and IxIy
     Ix2 = np.multiply(Ix, Ix)
     Iy2 = np.multiply(Iy, Iy)
@@ -94,7 +98,8 @@ def harris(img, sigma, threshold):
     Iy_smooth = smooth2D(Iy2, sigma)
     IxIy_smooth = smooth2D(IxIy, sigma)
     # compute cornesness function R
-    R = ((Ix_smooth * Iy_smooth) - (IxIy_smooth * IxIy_smooth)) - (0.04 * ((Ix_smooth + Iy_smooth) * (Ix_smooth + Iy_smooth)))
+    R = ((Ix_smooth * Iy_smooth) - (IxIy_smooth * IxIy_smooth)) - (
+                0.04 * ((Ix_smooth + Iy_smooth) * (Ix_smooth + Iy_smooth)))
     # mark local maxima as corner candidates;
     # perform quadratic approximation to local corners upto sub-pixel accuracy
     # perform thresholding and discard weak corners
@@ -102,19 +107,18 @@ def harris(img, sigma, threshold):
     for row in range(1, len(R) - 1):
         for col in range(1, len(R[0]) - 1):
             if R[row][col] > R[row - 1][col - 1] and R[row][col] > R[row - 1][col] and R[row][col] > R[row - 1][
-                col + 1] and R[row][col] > R[row][
-                col - 1] and R[row][col] > R[row][col + 1] and R[row][col] > R[row + 1][col - 1] and R[row][col] > \
-                    R[row + 1][col] and R[row][col] > \
-                    R[row + 1][col + 1]:
+                col + 1] and R[row][col] > R[row][col - 1] and R[row][col] > R[row][col + 1] and R[row][col] > \
+                    R[row + 1][col - 1] and R[row][col] > R[row + 1][col] and R[row][col] > R[row + 1][col + 1]:
                 e = R[row][col]
-                if e > threshold:
-                    a = (R[row - 1][col] + R[row + 1][col] - (2 * e))/2
-                    b = (R[row][col - 1] + R[row][col + 1] - (2 * e))/2
-                    c = (R[row + 1][col] - R[row - 1][col]) / 2
-                    d = (R[row][col + 1] - R[row][col - 1]) / 2
-                    x = -c / (2 * a)
-                    y = -d / (2 * b)
-                    corners.append((col+x, row+y, e))
+                a = (R[row - 1][col] + R[row + 1][col] - (2 * e)) / 2
+                b = (R[row][col - 1] + R[row][col + 1] - (2 * e)) / 2
+                c = (R[row + 1][col] - R[row - 1][col]) / 2
+                d = (R[row][col + 1] - R[row][col - 1]) / 2
+                x = -c / (2 * a)
+                y = -d / (2 * b)
+                cornerness = (a * (x ** 2)) + (b * (y ** 2)) + (c * x) + (d * y) + e
+                if cornerness > threshold:
+                    corners.append((col + x, row + y, cornerness))
 
     return sorted(corners, key=lambda corner: corner[2], reverse=True)
 
